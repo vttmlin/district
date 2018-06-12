@@ -1,14 +1,12 @@
 package com.tmdaq.district;
 
+import com.tmdaq.district.abs.DoSomeThing;
 import com.tmdaq.district.bean.RequestBean;
 import com.tmdaq.district.bean.ResBean;
-import org.apache.commons.io.FileUtils;
 
-import java.io.File;
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.List;
 import java.util.Map;
+import java.util.Properties;
 
 import static com.tmdaq.district.bean.RequestBean.Extensions.base;
 import static com.tmdaq.district.bean.RequestBean.Output.JSON;
@@ -17,6 +15,8 @@ import static com.tmdaq.district.util.JsonUtil.json2Map;
 import static com.tmdaq.district.util.JsonUtil.toJsonString;
 
 public class Start {
+    private static DoSomeThing doSomeThing;
+
     @SuppressWarnings("unchecked")
     public static void main(String[] args) throws IOException {
         if (args == null || args.length <= 0) {
@@ -35,33 +35,44 @@ public class Start {
         }
         assert key != null && !"".equals(key) : "key值无效 清申请高德web端的key";
         assert output != null && !"".equals(output) : "请设置output的值 output为要输出的文件名";
+        init();
         RequestBean requestBean = new RequestBean();
         String url = requestBean.setKey(key)
                 .setOutput(JSON).setExtensions(base).setSubdistrict(10).getUrl();
         System.out.println("发送请求中..");
+        /*原始的map*/
         Map<String, Object> map = json2Map(get(url));
         System.out.println("从高德数据接口获取数据成功 准备写入文件");
-        Map<String, Object> districts = (Map<String, Object>) ((List) map.get("districts")).get(0);
-        ResBean digui = digui(districts, new ResBean());
-        FileUtils.write(new File(output), toJsonString(digui), "utf8", false);
+        ResBean resBean = doSomeThing.readMap2Bean(map, null);
+        doSomeThing.writetoFile(output, toJsonString(resBean));
         System.out.println("行政区划已写到 " + output);
     }
 
-    @SuppressWarnings("unchecked")
-    private static ResBean digui(Map<String, Object> districts, ResBean resBean) {
-        resBean.setAdcode(String.valueOf(districts.get("adcode")));
-        resBean.setLevel(String.valueOf(districts.get("level")));
-        resBean.setName(String.valueOf(districts.get("name")));
-        List<ResBean> list = new ArrayList<>();
-        if (districts.get("districts") != null) {
-            List districts1 = (List) districts.get("districts");
-            if (districts != null && districts.size() > 0) {
-                for (Object o : districts1) {
-                    list.add(digui(((Map<String, Object>) o), new ResBean()));
+    private static void init() {
+        if (doSomeThing == null) {
+            doSomeThing = invoke();
+        }
+    }
+
+    private static DoSomeThing invoke() {
+        DoSomeThing doSomeThing = null;
+        Properties properties = new Properties();
+        try {
+            properties.load(Start.class.getResourceAsStream("/start.properties"));
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+        String doSomeThingClass = properties.getProperty("doSomeThing");
+        if (doSomeThingClass != null && !"".equals(doSomeThingClass)) {
+            try {
+                Class<?> aClass = Class.forName(doSomeThingClass);
+                if (aClass != null) {
+                    doSomeThing = ((DoSomeThing) aClass.newInstance());
                 }
+            } catch (ClassNotFoundException | IllegalAccessException | InstantiationException e) {
+                e.printStackTrace();
             }
         }
-        resBean.setDistricts(list);
-        return resBean;
+        return doSomeThing;
     }
 }

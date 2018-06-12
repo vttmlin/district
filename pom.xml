@@ -27,6 +27,7 @@
             <artifactId>json-wapper</artifactId>
             <version>1.0.0</version>
         </dependency>
+        <!--我这里是用的 jackson 当然也可以用 fastjson json json-lib gson-->
         <dependency>
             <groupId>com.fasterxml.jackson.core</groupId>
             <artifactId>jackson-databind</artifactId>
