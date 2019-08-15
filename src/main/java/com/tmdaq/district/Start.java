@@ -3,6 +3,7 @@ package com.tmdaq.district;
 import com.tmdaq.district.abs.DoSomeThing;
 import com.tmdaq.district.bean.RequestBean;
 import com.tmdaq.district.bean.ResBean;
+import lombok.SneakyThrows;
 
 import java.io.IOException;
 import java.util.Map;
@@ -13,6 +14,7 @@ import static com.tmdaq.district.bean.RequestBean.Output.JSON;
 import static com.tmdaq.district.util.HttpUtil.get;
 import static com.tmdaq.district.util.JsonUtil.json2Map;
 import static com.tmdaq.district.util.JsonUtil.toJsonString;
+import static com.tmdaq.district.util.RefUtil.invokeDefaultConstructor;
 
 public class Start {
     private static DoSomeThing doSomeThing;
@@ -20,6 +22,7 @@ public class Start {
     @SuppressWarnings("unchecked")
     public static void main(String[] args) throws IOException {
         if (args == null || args.length <= 0) {
+            System.err.println("请输入参数");
             return;
         }
         String output = null;
@@ -54,25 +57,14 @@ public class Start {
         }
     }
 
+    @SneakyThrows
     private static DoSomeThing invoke() {
-        DoSomeThing doSomeThing = null;
         Properties properties = new Properties();
-        try {
-            properties.load(Start.class.getResourceAsStream("/start.properties"));
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
+        properties.load(Start.class.getResourceAsStream("/start.properties"));
         String doSomeThingClass = properties.getProperty("doSomeThing");
-        if (doSomeThingClass != null && !"".equals(doSomeThingClass)) {
-            try {
-                Class<?> aClass = Class.forName(doSomeThingClass);
-                if (aClass != null) {
-                    doSomeThing = ((DoSomeThing) aClass.newInstance());
-                }
-            } catch (ClassNotFoundException | IllegalAccessException | InstantiationException e) {
-                e.printStackTrace();
-            }
+        if (doSomeThingClass != null && !doSomeThingClass.trim().isEmpty()) {
+           return invokeDefaultConstructor(doSomeThingClass,DoSomeThing.class);
         }
-        return doSomeThing;
+        throw new IllegalStateException();
     }
 }

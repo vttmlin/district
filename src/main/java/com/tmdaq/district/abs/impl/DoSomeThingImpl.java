@@ -9,6 +9,7 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 
 import static com.tmdaq.district.util.JsonUtil.toJsonString;
 
@@ -21,10 +22,7 @@ public class DoSomeThingImpl implements DoSomeThing {
     @SuppressWarnings("unchecked")
     public ResBean readMap2Bean(Map<String, Object> map, ResBean resBean) {
         Map<String, Object> districts = (Map<String, Object>) ((List) map.get("districts")).get(0);
-        if (resBean == null) {
-            resBean = new ResBean();
-        }
-        return digui(districts, resBean);
+        return digui(districts, Optional.ofNullable(resBean).orElse(new ResBean()));
     }
 
     @Override
@@ -46,13 +44,12 @@ public class DoSomeThingImpl implements DoSomeThing {
         List<ResBean> list = new ArrayList<>();
         if (districts.get("districts") != null) {
             List districts1 = (List) districts.get("districts");
-            if (districts != null && districts.size() > 0) {
+            if (!districts.isEmpty()) {
                 for (Object o : districts1) {
                     list.add(digui(((Map<String, Object>) o), new ResBean()));
                 }
             }
         }
-        resBean.setDistricts(list);
-        return resBean;
+        return resBean.setDistricts(list);
     }
 }
